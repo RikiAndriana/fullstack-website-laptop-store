@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  SOLD_OUT
+}
+
+enum LaptopCondition {
+  NEW
+  USED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  NEGOTIATION
+  WON
+  LOST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("OWNER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Brand {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  description String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  laptops     Laptop[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  icon        String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  laptops     Laptop[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Laptop {
+  id               String          @id @default(cuid())
+  name             String
+  slug             String          @unique
+  brandId          String
+  categoryId       String
+  condition        LaptopCondition @default(NEW)
+  price            Int
+  costPrice        Int?
+  stock            Int             @default(1)
+  status           ProductStatus   @default(ACTIVE)
+  mainImage        String?
+  description      String
+  processor        String
+  ram              String
+  storage          String
+  gpu              String?
+  screenSize       String?
+  screenResolution String?
+  operatingSystem  String?
+  warranty         String?
+  weight           String?
+  color            String?
+  packageItems     String?
+  conditionNote    String?
+  usageTags        String[]        @default([])
+  isFeatured       Boolean         @default(false)
+  isBestSeller     Boolean         @default(false)
+  viewsCount       Int             @default(0)
+  brand            Brand           @relation(fields: [brandId], references: [id])
+  category         Category        @relation(fields: [categoryId], references: [id])
+  promos           Promo[]
+  leads            Lead[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model Promo {
+  id             String   @id @default(cuid())
+  laptopId       String
+  promoName      String
+  promoType      String   @default("manual")
+  normalPrice    Int
+  promoPrice     Int
+  label          String   @default("Promo")
+  startDate      DateTime?
+  endDate        DateTime?
+  isActive       Boolean  @default(true)
+  showOnHomepage Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  laptop         Laptop   @relation(fields: [laptopId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  name            String
+  whatsapp        String
+  laptopId        String?
+  budget          String?
+  needDescription String?
+  message         String?
+  status          LeadStatus @default(NEW)
+  adminNote       String?
+  laptop          Laptop?    @relation(fields: [laptopId], references: [id], onDelete: SetNull)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+}
