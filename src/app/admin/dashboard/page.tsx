@@ -1,14 +1,34 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
+type DashboardLaptop = Prisma.LaptopGetPayload<{
+  include: {
+    brand: true;
+    category: true;
+    promos: { where: { isActive: true }; take: 1 };
+  };
+}>;
+
+type DashboardLead = Prisma.LeadGetPayload<{
+  include: { laptop: true };
+}>;
+
 export default async function Dashboard() {
   await requireAdmin();
-  const [laptops, promos, leads, brands, categories, latestLeads] = await Promise.all([
+  const [laptops, promos, leads, brands, categories, latestLeads]: [
+    DashboardLaptop[],
+    number,
+    number,
+    { id: string; name: string }[],
+    { id: string; name: string }[],
+    DashboardLead[],
+  ] = await Promise.all([
     prisma.laptop.findMany({ include: { brand: true, category: true, promos: { where: { isActive: true }, take: 1 } }, orderBy: { createdAt: "desc" } }),
     prisma.promo.count({ where: { isActive: true } }),
     prisma.lead.count(),
@@ -35,7 +55,7 @@ export default async function Dashboard() {
           <Stat label="Total laptop" value={laptops.length.toString()} />
           <Stat label="Promo aktif" value={promos.toString()} />
           <Stat label="Leads masuk" value={leads.toString()} />
-          <Stat label="Stok habis" value={laptops.filter((item) => item.stock < 1).length.toString()} />
+          <Stat label="Stok habis" value={laptops.filter((item: DashboardLaptop) => item.stock < 1).length.toString()} />
         </div>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.7fr]">
@@ -47,7 +67,7 @@ export default async function Dashboard() {
               </Link>
             </div>
             <div className="divide-y divide-slate-100">
-              {laptops.map((item) => (
+              {laptops.map((item: DashboardLaptop) => (
                 <div key={item.id} className="grid gap-3 p-4 md:grid-cols-[1fr_auto] md:items-center">
                   <div className="grid gap-3 sm:grid-cols-[84px_1fr] sm:items-center">
                     <div className="relative aspect-[4/3] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
@@ -94,7 +114,7 @@ export default async function Dashboard() {
               <form action="/api/admin/promos" method="post" className="mt-4 grid gap-3">
                 <select name="laptopId" required className="form-field">
                   <option value="">Pilih laptop</option>
-                  {laptops.map((item) => (
+                  {laptops.map((item: DashboardLaptop) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
                     </option>
@@ -115,7 +135,7 @@ export default async function Dashboard() {
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <h2 className="text-xl font-black">Leads Terbaru</h2>
               <div className="mt-3 divide-y divide-slate-100">
-                {latestLeads.map((lead) => (
+                {latestLeads.map((lead: DashboardLead) => (
                   <div key={lead.id} className="py-3">
                     <p className="font-bold">{lead.name}</p>
                     <p className="text-sm text-slate-600">{lead.whatsapp} / {lead.budget || "Budget belum diisi"}</p>
@@ -128,8 +148,8 @@ export default async function Dashboard() {
 
             <div className="rounded-lg border border-slate-200 bg-white p-4">
               <h2 className="text-xl font-black">Master Data</h2>
-              <p className="mt-2 text-sm text-slate-600">Brand: {brands.map((item) => item.name).join(", ")}</p>
-              <p className="mt-2 text-sm text-slate-600">Kategori: {categories.map((item) => item.name).join(", ")}</p>
+              <p className="mt-2 text-sm text-slate-600">Brand: {brands.map((item: { id: string; name: string }) => item.name).join(", ")}</p>
+              <p className="mt-2 text-sm text-slate-600">Kategori: {categories.map((item: { id: string; name: string }) => item.name).join(", ")}</p>
             </div>
           </div>
         </div>
