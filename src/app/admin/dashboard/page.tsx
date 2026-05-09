@@ -1,23 +1,30 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatRupiah } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-type DashboardLaptop = Prisma.LaptopGetPayload<{
-  include: {
-    brand: true;
-    category: true;
-    promos: { where: { isActive: true }; take: 1 };
-  };
-}>;
+type DashboardLaptop = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  stock: number;
+  mainImage: string | null;
+  brand: { name: string };
+  category: { name: string };
+  promos: Array<{ promoPrice: number }>;
+};
 
-type DashboardLead = Prisma.LeadGetPayload<{
-  include: { laptop: true };
-}>;
+type DashboardLead = {
+  id: string;
+  name: string;
+  whatsapp: string;
+  budget: string | null;
+  needDescription: string | null;
+};
 
 export default async function Dashboard() {
   await requireAdmin();
